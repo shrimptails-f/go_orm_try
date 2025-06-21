@@ -9,15 +9,15 @@ Go ORMの比較用です
 * MySQL8.0
 # ORMごとの実装パターン
 ## gorm使用
-また、並列にテストを実行できるように、スキーマ名にnanoidを付与して作成する実装例も含んでいます。<br>
+並列にテストを実行できるように、スキーマ名にnanoidを付与して作成する実装例も含んでいます。<br>
 ・スキーマ名にnanoidを含める実装例<br>
 gorm/mysql/mysql.goのCreateNewTestDB関数
 
 ### テーブル追加手順
 1. gorm/migrations/modelに構造体を追加
 ### サンプルデータ追加手順
-1. /gorm/seeder/seeders/にseederの関数を追加
-2. /data/gorm/seeder/main.goに2の関数を追加
+1. gorm/seeder/seeders/にseederの関数を追加
+2. gorm/seeder/main.goに2の関数を追加
 ### テーブル作成
 ```bash
 task gorm-migration-create
@@ -145,6 +145,12 @@ task sqlc-migration-drop
 ### テーブル作成・削除
 ```bash
 task sqlc-migration-fresh
+```
+### データ取得処理実装例
+以下を参照してください。
+sqlc/main.go
+```
+go run sqlc/main.go
 ```
 ### 懸念点
 1. gormのようにネストしてサンプルデータの作成ができないため、サンプルデータのリレーション管理が煩雑になる
