@@ -1,0 +1,10 @@
+version: "2"
+sql:
+  - engine: "mysql"
+    queries: "./sqlc/queries"
+    schema: "./sqlc/migrations"
+    gen:
+      go:
+        package: "model"
+        out: "./sqlc/model"
+        sql_package: "database/sql"

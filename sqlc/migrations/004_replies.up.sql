@@ -1,0 +1,6 @@
+CREATE TABLE replies (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  comment_id BIGINT UNSIGNED,
+  content TEXT,
+  FOREIGN KEY (comment_id) REFERENCES comments(id)
+);

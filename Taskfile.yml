@@ -1,0 +1,58 @@
+# https://taskfile.dev
+
+version: '3'
+
+env:
+  MIGRATION_ROOT: "gorm/migrations"
+  SEED_ROOT: "gorm/seeder"
+
+tasks:
+  setup:
+    desc: "ローカル環境のセットアップを行う。(gitコマンドが使用できるようにする)"
+    cmds:
+      - cp {{.APP_ROOT}}/.gitconfig /root/.gitconfig
+      - git config --global core.autocrlf input
+      - git config --global --add safe.directory {{.APP_ROOT}}
+      - chmod +x {{.APP_ROOT}}/.github/hooks/pre-commit
+      - git config core.hooksPath {{.APP_ROOT}}/.github/hooks
+      # わざわざコピーする理由は、commit時に毎回メアドとユーザー名の設定(.gitconfigの作成)を求められ面倒なので、git cloneするなら作成済みであろう.gitconfigを使うという魂胆である。
+      # だが、Windowsユーザーが.gitconfigを使用中と解釈されるようでgit configコマンドが失敗するため、ファイルをコピーする必要がある。
+      # core.autocrlf inputを使用する理由は、Linuxの改行コードが原因で差分が表示されてしまうため。
+      # safe.directory $APP_ROOTを使用する理由は、WSL2側に配置しgitを使うには毎回求められるため。
+
+  gorm-migration-drop:
+    desc: "gormを使用してdevelop schema のテーブルを削除する。"
+    cmds:
+      - go run {{.MIGRATION_ROOT}}/main.go dev drop
+
+  gorm-migration-create:
+    desc: "gormを使用してdevelop schema のテーブル作成する。"
+    cmds:
+      - go run {{.MIGRATION_ROOT}}/main.go dev create
+
+  gorm-migration-fresh:
+    desc: "gormを使用してdevelop schema のテーブルを削除し作成する。"
+    cmds:
+      - task: gorm-migration-drop
+      - task: gorm-migration-create
+
+  gorm-seed:
+    desc: "gormを使用してdevelop schema のテーブルにデータを投入する。"
+    cmds:
+      - go run {{.SEED_ROOT}}/main.go dev
+  
+  sqlc-migration-create:
+    desc: "sqlcを使用してマイグレーションを行う"
+    cmds:
+      - migrate -path ./sqlc/migrations -database "mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${DB_HOST}:${DB_PORT})/${MYSQL_DATABASE}?charset=utf8mb4&parseTime=true&loc=Local" up
+
+  sqlc-migration-drop:
+    desc: "sqlcを使用してマイグレーションを行う"
+    cmds:
+      - migrate -path ./sqlc/migrations -database "mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@tcp(${DB_HOST}:${DB_PORT})/${MYSQL_DATABASE}?charset=utf8mb4&parseTime=true&loc=Local" drop -f
+
+  sqlc-migration-fresh:
+    desc: "sqlcを使用してdevelop schema のテーブルを削除し作成する。"
+    cmds:
+      - task: sqlc-migration-drop
+      - task: sqlc-migration-create
