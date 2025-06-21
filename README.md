@@ -40,6 +40,77 @@ gorm/main.go
 ```
 go run gorm/main.go
 ```
+### テスト時のデータ投入例(gorm)
+
+<details>
+<summary>実装例</summary>
+
+``` go
+// CreateData はテストデータを作成します。
+func CreateData(t *testing.T, conn *pkgmysql.MySQL) {
+	user := model.User{
+		UserName: "test_user",
+		Posts: []model.Post{
+			{
+				Title: "Post 1",
+				Comments: []model.Comment{
+					{
+						Content: "Comment A",
+						Replies: []model.Reply{
+							{Content: "Reply A-1"},
+							{Content: "Reply A-2"},
+						},
+					},
+					{
+						Content: "Comment B",
+						Replies: []model.Reply{
+							{Content: "Reply B-1"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	if err := tx.Create(&user).Error; err != nil {
+		log.Fatal(err)
+	}
+}
+```
+</details>
+
+### テスト時のデータ投入例(fixture)
+gorm/fixture/fixture.goで定義しておけばこんな感じでリレーションIDやNameなどテストで意識したくない情報を無視してできます。<br>
+だいぶ前に実装したっきりなのでちょっと間違ってるかも。
+<details>
+<summary>実装例</summary>
+
+``` go
+// CreateData はテストデータを作成します。
+func CreateData(t *testing.T, conn *pkgmysql.MySQL) {
+	f := fixture.Build(t,
+		user1.
+		Connect(chatRoom).
+		Connect(
+			fixture.ChatMessage(func(cm *model.ChatMessage) {
+				cm.Message = "テスト1"
+				cm.CreatedAt = timeDate
+			}),
+		),
+		Connect(chatRoom2).
+		Connect(
+			fixture.ChatMessage(func(cm *model.ChatMessage) {
+				cm.Message = "テスト4"
+				cm.CreatedAt = timeDate
+			}),
+		),
+	)
+
+	f.Setup(t, conn)
+}
+```
+</details>
+
 ### 懸念点
 1~5はActiveRecord的なライブラリで共通して言えることではある。<br>
 6は致命的。だがgolang-migrate/migrateを併用すれば解決できる<br>
@@ -86,3 +157,8 @@ task sqlc-migration-fresh
 2. 型安全性：Goでの型チェックがSQLベースで保証される
 3. SQLをベースにデータを格納する構造体を自動で作成できる。
 4. テーブル正規化を行うと自然と複雑なクエリとなりやすいが、クエリ前提なのでつらさがない
+## 今のところの結論
+gorm golang-migrate/migrateの併用<br>
+- マイグレーションはgolang-migrate/migrateで行う
+- 処理ではgormを使用
+- 関連テーブルが多い場合はViewを使用して1つのドメイン(構造体)として扱う。
